@@ -1,8 +1,6 @@
-package com.example.randomuser.api
+package com.example.randomuser.data.api
 
-import com.example.randomuser.data.ApiResponse
-import com.example.randomuser.data.User
-import retrofit2.Response
+import com.example.randomuser.data.model.ApiResponse
 import retrofit2.http.GET
 import retrofit2.http.Query
 

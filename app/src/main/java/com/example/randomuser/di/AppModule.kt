@@ -1,7 +1,7 @@
 package com.example.randomuser.di
 
-import com.example.randomuser.api.ApiService
-import com.example.randomuser.api.RetrofitClient
+import com.example.randomuser.data.api.ApiService
+import com.example.randomuser.data.api.RetrofitClient
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
