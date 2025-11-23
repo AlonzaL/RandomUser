@@ -1,4 +1,4 @@
-package com.example.randomuser.data
+package com.example.randomuser.data.model
 
 import kotlinx.serialization.Serializable
 
@@ -15,7 +15,8 @@ data class User(
     val email: String?,
     val phone: String?,
     val picture: Picture?,
-    val nat: String?
+    val nat: String?,
+    val dob: Dob?
 )
 
 @Serializable
@@ -62,4 +63,10 @@ data class Timezone(
 data class Picture(
     val large: String?,
     val thumbnail: String?
+)
+
+@Serializable
+data class Dob(
+    val date: String?,
+    val age: Int?
 )

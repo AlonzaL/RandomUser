@@ -1,8 +1,7 @@
-package com.example.randomuser.repository
+package com.example.randomuser.domain.repository
 
-import com.example.randomuser.api.ApiService
-import com.example.randomuser.data.User
-import retrofit2.Response
+import com.example.randomuser.data.api.ApiService
+import com.example.randomuser.data.model.User
 import javax.inject.Inject
 import javax.inject.Singleton
 
