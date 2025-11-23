@@ -1,63 +1,67 @@
 package com.example.randomuser.viewModel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.randomuser.data.User
 import com.example.randomuser.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import java.lang.Exception
 import javax.inject.Inject
+
+sealed class NavigationEvent {
+    object NavigateToUserList : NavigationEvent()
+}
+
+sealed interface UserListUiState {
+    data object Loading : UserListUiState // Состояние загрузки
+    data class Success(val users: List<User>) : UserListUiState // Успех, содержит данные
+    data class Error(val message: String) : UserListUiState // Ошибка, содержит сообщение
+    data object Idle : UserListUiState // Начальное/нейтральное состояние
+}
 
 @HiltViewModel
 class UserViewModel @Inject constructor(
     private val repository: UserRepository
 ) : ViewModel() {
 
-    private val _users = MutableStateFlow<List<User>>(emptyList())
-    val users: StateFlow<List<User>> = _users.asStateFlow()
+    private val _usersList = MutableStateFlow<List<User>>(emptyList())
 
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-    private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error.asStateFlow()
+    private val _uiState = MutableStateFlow<UserListUiState>(UserListUiState.Idle)
+    val uiState: StateFlow<UserListUiState> = _uiState.asStateFlow()
 
-    // --- Вот они, наши переменные! ---
-    // Они хранят текущие параметры для запроса.
-    private var currentGender: String = ""
-    private var currentNationalities: String = ""
-    // ---------------------------------
+    // Навигация остается без изменений
+    private val _navigationEvent = Channel<NavigationEvent>()
+    val navigationEvent = _navigationEvent.receiveAsFlow()
+
 
     /**
      * Этот метод вызывается из UI (ConfigScreen), когда пользователь нажимает кнопку "Сгенерировать".
      */
-    fun startLoadingWithNewSettings(gender: String, nationalities: String) {
-        // 1. Сохраняем новые настройки в локальные переменные ViewModel
-        currentGender = gender
-        currentNationalities = nationalities
 
-        // 3. Запускаем загрузку первой страницы с новыми параметрами
-        loadUser()
-    }
-
-    fun loadUser() {
+    fun loadUser(gender: String, nat: String) {
+        Log.d("ViewModelDebug", "1. Метод generateAndNavigate вызван") // <-- ЛОГ №1
         viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
+            _uiState.value = UserListUiState.Loading
             try {
-                val response = repository.getRandomUser(currentGender, currentNationalities)
-                if (response.isSuccessful) {
-                    _users.value = response.body()?.result?: emptyList()
-                } else {
-                    _error.value = "Ошибка загрузки пользователя ${response.message()}"
-                }
+                val response = repository.getRandomUser(gender, nat)
+                // --- ЛОГИРОВАНИЕ ДАННЫХ ---
+                Log.d("ApiDebug", "2. УСПЕХ! Получены данные: $response")
+
+                _usersList.value = listOf(response) + _usersList.value
+
+                // 4. Теперь обновляем UI, передавая ему полный, накопленный список из "копилки"
+                _uiState.value = UserListUiState.Success(_usersList.value)
+
+                _navigationEvent.send(NavigationEvent.NavigateToUserList)
             } catch (e: kotlin.Exception) {
-                _error.value = "Ошибка загрузки пользователя ${e.message}"
-            } finally {
-                _isLoading.value = false
+                _uiState.value = UserListUiState.Error("Ошибка загрузки пользователя ${e.message}")
             }
         }
     }
