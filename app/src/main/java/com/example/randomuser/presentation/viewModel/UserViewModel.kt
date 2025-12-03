@@ -9,6 +9,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -28,7 +29,6 @@ sealed interface UserListUiState {
 class UserViewModel @Inject constructor(
     private val repository: UserRepository
 ) : ViewModel() {
-    private val _usersList = MutableStateFlow<List<User>>(emptyList())
 
     private val _uiState = MutableStateFlow<UserListUiState>(UserListUiState.Idle)
     val uiState: StateFlow<UserListUiState> = _uiState.asStateFlow()
@@ -39,23 +39,36 @@ class UserViewModel @Inject constructor(
     private val _navigationEvent = Channel<NavigationEvent>()
     val navigationEvent = _navigationEvent.receiveAsFlow()
 
+    init {
+        viewModelScope.launch {
+            repository.getUsersFromDb().collectLatest { users ->
+                if (users.isNotEmpty()) {
+                    _uiState.value = UserListUiState.Success(users)
+                } else {
+                    _uiState.value = UserListUiState.Idle
+                }
+            }
+        }
+    }
+
     fun loadUser(gender: String, nat: String) {
         viewModelScope.launch {
             _uiState.value = UserListUiState.Loading
             try {
-                val response = repository.getRandomUser(gender, nat)
-                _usersList.value = listOf(response) + _usersList.value
-                _uiState.value = UserListUiState.Success(_usersList.value)
+                repository.fetchAndSaveUser(gender, nat)
                 _navigationEvent.send(NavigationEvent.NavigateToUserList)
             } catch (e: Exception) {
-                _uiState.value = UserListUiState.Error("Ошибка загрузки пользователя ${e.message}")
+                _uiState.value = UserListUiState.Error("Ошибка сети: ${e.message}")
             }
         }
     }
 
     fun selectUser(userUuid: String) {
-        val user = _usersList.value.find { it.login?.uuid == userUuid }
-        _selectedUser.value = user
+        val currentState = _uiState.value
+        if (currentState is UserListUiState.Success) {
+            val user = currentState.users.find { it.login?.uuid == userUuid }
+            _selectedUser.value = user
+        }
     }
 
     fun clearSelectedUser() {

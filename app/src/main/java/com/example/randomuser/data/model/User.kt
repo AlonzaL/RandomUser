@@ -1,5 +1,7 @@
 package com.example.randomuser.data.model
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 import kotlinx.serialization.Serializable
 
 data class ApiResponse(
@@ -7,7 +9,11 @@ data class ApiResponse(
 )
 
 @Serializable
+@Entity(tableName = "users_table")
 data class User(
+    @PrimaryKey(autoGenerate = true)
+    val localId: Int = 0,
+
     val login: Login?,
     val gender: String?,
     val name: Name?,

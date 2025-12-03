@@ -20,6 +20,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -181,31 +182,31 @@ private fun InfoTabs(selectedTabIndex: Int, onTabSelected: (Int) -> Unit) {
         painterResource(R.drawable.location)
     )
 
-    TabRow(
+    SecondaryTabRow(
         selectedTabIndex = selectedTabIndex,
         containerColor = colorResource(R.color.tabBackground),
         contentColor = Color.White,
         indicator = {},
-        divider = {}
-    ) {
-        tabs.forEachIndexed { index, icon ->
-            val isSelected = selectedTabIndex == index
-            Tab(
-                selected = isSelected,
-                onClick = { onTabSelected(index) },
-                modifier = if (isSelected) Modifier.background(Color.White) else Modifier,
-                icon = {
-                    Icon(
-                        painter = icon,
-                        contentDescription = "Tab $index",
-                        tint = if (isSelected) colorResource(R.color.tabBackground) else Color.White,
-                        modifier = Modifier
-                            .size(25.dp)
-                    )
-                }
-            )
-        }
-    }
+        divider = {},
+        tabs = {
+            tabs.forEachIndexed { index, icon ->
+                val isSelected = selectedTabIndex == index
+                Tab(
+                    selected = isSelected,
+                    onClick = { onTabSelected(index) },
+                    modifier = if (isSelected) Modifier.background(Color.White) else Modifier,
+                    icon = {
+                        Icon(
+                            painter = icon,
+                            contentDescription = "Tab $index",
+                            tint = if (isSelected) colorResource(R.color.tabBackground) else Color.White,
+                            modifier = Modifier
+                                .size(25.dp)
+                        )
+                    }
+                )
+            }
+        })
 }
 
 
